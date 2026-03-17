@@ -16,6 +16,7 @@ class GameState:
         self.players = {}
         self.turn = None
         self.winner = None
+        self.winning_cells = None
         self.is_draw = False
         self.created_at = datetime.now()
         self.last_activity = datetime.now()
@@ -29,8 +30,8 @@ def check_winner(board):
     ]
     for a, b, c in lines:
         if board[a] == board[b] == board[c] and board[a] != '':
-            return board[a]
-    return None
+            return board[a], [a, b, c]
+    return None, None
 
 
 def clean_old_games():
@@ -104,6 +105,7 @@ def get_game_state(room):
                     for pid, p in game.players.items()},
         'turn': game.turn,
         'winner': game.winner,
+        'winning_cells': game.winning_cells,
         'is_draw': game.is_draw,
         'game_active': len(game.players) == 2 and not game.winner and not game.is_draw
     })
@@ -127,22 +129,24 @@ def make_move(room):
     if game.turn != player_id:
         return jsonify({'error': 'Not your turn'}), 400
 
+    if not isinstance(cell, int) or not (0 <= cell <= 8):
+        return jsonify({'error': 'Invalid cell'}), 400
+
     if game.board[cell] != '':
         return jsonify({'error': 'Cell already occupied'}), 400
-
-    if not (0 <= cell <= 8):
-        return jsonify({'error': 'Invalid cell'}), 400
 
     symbol = game.players[player_id]['symbol']
     game.board[cell] = symbol
 
-    winner = check_winner(game.board)
+    winner, winning_cells = check_winner(game.board)
     if winner:
         game.winner = winner
+        game.winning_cells = winning_cells
         return jsonify({
             'success': True,
             'board': game.board,
             'winner': winner,
+            'winning_cells': winning_cells,
             'game_over': True
         })
 
@@ -175,6 +179,7 @@ def reset_game(room):
     game = games[room]
     game.board = [''] * 9
     game.winner = None
+    game.winning_cells = None
     game.is_draw = False
     game.turn = list(game.players.keys())[0] if game.players else None
     game.last_activity = datetime.now()
@@ -186,6 +191,6 @@ def reset_game(room):
 def health():
     return jsonify({'status': 'ok'})
 
-//
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

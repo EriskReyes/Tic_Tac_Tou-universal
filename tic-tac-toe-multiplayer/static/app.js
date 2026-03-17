@@ -1,184 +1,124 @@
-let gameState = {
-    playerId: null,
-    room: null,
-    symbol: null,
-    gameStarted: false,
-    pollingInterval: null
+const state = {
+    board: Array(9).fill(''),
+    turn: 'X',
+    scores: { X: 0, O: 0, draws: 0 },
+    names: { X: 'Spieler X', O: 'Spieler O' },
+    gameOver: false
 };
 
-function showScreen(screenName) {
+function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenName).classList.add('active');
+    document.getElementById(id).classList.add('active');
 }
 
-async function joinGame() {
-    const username = document.getElementById('usernameInput').value.trim();
+function setStatus(text, type = '') {
+    const el = document.getElementById('gameStatus');
+    el.className = 'status-banner' + (type ? ' ' + type : '');
+    el.textContent = text;
+}
 
-    if (!username) {
-        alert('Por favor ingresa tu nombre');
+function startGame() {
+    const x = document.getElementById('xNameInput').value.trim() || 'Spieler X';
+    const o = document.getElementById('oNameInput').value.trim() || 'Spieler O';
+    state.names = { X: x, O: o };
+    state.board = Array(9).fill('');
+    state.turn = 'X';
+    state.gameOver = false;
+    document.getElementById('xName').textContent = x;
+    document.getElementById('oName').textContent = o;
+    updateScoreDisplay();
+    renderBoard();
+    updateStatus();
+    showScreen('gameScreen');
+}
+
+function checkWinner(board) {
+    const lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ];
+    for (const [a, b, c] of lines) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return { winner: board[a], cells: [a, b, c] };
+        }
+    }
+    return null;
+}
+
+function makeMove(i) {
+    if (state.gameOver || state.board[i]) return;
+    state.board[i] = state.turn;
+
+    const result = checkWinner(state.board);
+    if (result) {
+        state.gameOver = true;
+        state.scores[result.winner]++;
+        updateScoreDisplay();
+        renderBoard(result.cells);
+        const won = result.winner === 'X';
+        setStatus(state.names[result.winner] + ' hat gewonnen! 🎉', won ? 'win' : 'lose');
         return;
     }
 
-    try {
-        const response = await fetch('/api/join', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username })
-        });
-
-        const data = await response.json();
-
-        gameState.playerId = data.player_id;
-        gameState.room = data.room;
-        gameState.symbol = data.symbol;
-
-        if (data.game_started) {
-            gameState.gameStarted = true;
-            showScreen('gameScreen');
-            startPolling();
-        } else {
-            showScreen('waitingScreen');
-            document.getElementById('yourSymbol').textContent = data.symbol;
-            document.getElementById('roomCode').innerHTML = `Sala: <code>${data.room.substring(0, 8)}...</code>`;
-            startWaitingPolling();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al unirse al juego');
+    if (!state.board.includes('')) {
+        state.gameOver = true;
+        state.scores.draws++;
+        updateScoreDisplay();
+        renderBoard();
+        setStatus('Unentschieden!', 'draw');
+        return;
     }
+
+    state.turn = state.turn === 'X' ? 'O' : 'X';
+    renderBoard();
+    updateStatus();
 }
 
-function startWaitingPolling() {
-    gameState.pollingInterval = setInterval(async () => {
-        try {
-            const response = await fetch(`/api/game/${gameState.room}/state`);
-            const data = await response.json();
-
-            if (data.game_active) {
-                gameState.gameStarted = true;
-                clearInterval(gameState.pollingInterval);
-                showScreen('gameScreen');
-                startPolling();
-            }
-        } catch (error) {
-            console.error('Polling error:', error);
-        }
-    }, 1000);
+function updateStatus() {
+    const type = state.turn === 'X' ? 'your-turn' : 'opponent-turn';
+    setStatus('Zug von ' + state.names[state.turn], type);
 }
 
-function startPolling() {
-    updateGameUI();
-    gameState.pollingInterval = setInterval(updateGameUI, 500);
-}
-
-async function updateGameUI() {
-    try {
-        const response = await fetch(`/api/game/${gameState.room}/state`);
-        const data = await response.json();
-
-        renderBoard(data.board);
-        updateTurnInfo(data);
-        updateOpponentInfo(data);
-
-        if (data.winner) {
-            clearInterval(gameState.pollingInterval);
-            const isWinner = data.winner === gameState.symbol;
-            document.getElementById('gameStatus').textContent = isWinner ? '¡Ganaste!' : '¡Perdiste!';
-            document.getElementById('gameStatus').style.color = isWinner ? '#3B6D11' : '#a32d2d';
-        } else if (data.is_draw) {
-            clearInterval(gameState.pollingInterval);
-            document.getElementById('gameStatus').textContent = '¡Empate!';
-            document.getElementById('gameStatus').style.color = '#666';
-        }
-    } catch (error) {
-        console.error('Error updating game:', error);
-    }
-}
-
-function renderBoard(board) {
+function renderBoard(winCells = []) {
     const boardEl = document.getElementById('board');
     boardEl.innerHTML = '';
-
-    board.forEach((cell, index) => {
-        const cellBtn = document.createElement('button');
-        cellBtn.className = 'cell';
-        cellBtn.textContent = cell;
-
-        if (cell !== '') {
-            cellBtn.classList.add(cell.toLowerCase());
-            cellBtn.disabled = true;
+    state.board.forEach((cell, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'cell';
+        if (cell) {
+            btn.classList.add(cell.toLowerCase());
+            btn.textContent = cell;
+            btn.disabled = true;
+        } else if (!state.gameOver) {
+            btn.onclick = () => makeMove(i);
         } else {
-            cellBtn.onclick = () => makeMove(index);
+            btn.disabled = true;
         }
-
-        boardEl.appendChild(cellBtn);
+        if (winCells.includes(i)) btn.classList.add('winning');
+        boardEl.appendChild(btn);
     });
 }
 
-async function makeMove(cellIndex) {
-    try {
-        const response = await fetch(`/api/game/${gameState.room}/move`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                player_id: gameState.playerId,
-                cell: cellIndex
-            })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            alert('Error: ' + data.error);
-            return;
-        }
-
-        updateGameUI();
-    } catch (error) {
-        console.error('Error making move:', error);
-        alert('Error al hacer el movimiento');
-    }
+function updateScoreDisplay() {
+    document.getElementById('xScore').textContent = state.scores.X;
+    document.getElementById('oScore').textContent = state.scores.O;
+    document.getElementById('drawsScore').textContent = state.scores.draws;
 }
 
-function updateTurnInfo(data) {
-    const players = data.players;
-    const currentPlayer = Object.values(players).find(p => p.symbol === data.turn);
-
-    document.getElementById('currentTurn').textContent =
-        currentPlayer ? `${currentPlayer.username} (${currentPlayer.symbol})` : '-';
-    document.getElementById('playerSymbol').textContent = gameState.symbol;
-}
-
-function updateOpponentInfo(data) {
-    const players = data.players;
-    const opponentSymbol = gameState.symbol === 'X' ? 'O' : 'X';
-    const opponent = Object.values(players).find(p => p.symbol === opponentSymbol);
-
-    const opponentInfo = document.getElementById('opponentInfo');
-    if (opponent) {
-        opponentInfo.innerHTML = `<p>Oponente: <strong>${opponent.username}</strong></p>`;
-    }
-}
-
-async function resetGame() {
-    try {
-        await fetch(`/api/game/${gameState.room}/reset`, { method: 'POST' });
-        clearInterval(gameState.pollingInterval);
-        startPolling();
-    } catch (error) {
-        console.error('Error resetting game:', error);
-    }
+function resetGame() {
+    state.board = Array(9).fill('');
+    state.turn = 'X';
+    state.gameOver = false;
+    renderBoard();
+    updateStatus();
 }
 
 function goBack() {
-    clearInterval(gameState.pollingInterval);
-    gameState = {
-        playerId: null,
-        room: null,
-        symbol: null,
-        gameStarted: false,
-        pollingInterval: null
-    };
-    document.getElementById('usernameInput').value = '';
+    state.scores = { X: 0, O: 0, draws: 0 };
+    state.board = Array(9).fill('');
+    state.gameOver = false;
+    document.getElementById('xNameInput').value = '';
+    document.getElementById('oNameInput').value = '';
     showScreen('joinScreen');
 }

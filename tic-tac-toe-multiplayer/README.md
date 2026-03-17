@@ -1,56 +1,56 @@
 # Tic Tac Toe Multiplayer
 
-A real-time multiplayer Tic Tac Toe game built with Flask and SocketIO.
+Ein Echtzeit-Mehrspieler-Tic-Tac-Toe-Spiel, erstellt mit Flask und SocketIO.
 
 ## Features
 
-- Real-time gameplay using WebSockets
-- Multiple simultaneous games
-- Automatic player matching
-- Responsive design
+- Echtzeit-Gameplay mittels WebSockets
+- Mehrere gleichzeitig laufende Spiele
+- Automatische Spieler-Zuordnung
+- Responsives Design
 
 ## Installation
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+1. Repository klonen
+2. Abhängigkeiten installieren:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-## Running Locally
+## Lokal ausführen
 
 ```bash
 python app.py
 ```
 
-Then open your browser to `http://localhost:5000`
+Öffnen Sie dann Ihren Browser unter `http://localhost:5000`
 
-## Deployment to Vercel
+## Bereitstellung auf Vercel
 
-**Important Note**: Vercel's support for WebSockets (required for real-time features) is currently in beta and has limitations. For production use, consider:
+**Wichtiger Hinweis**: Die Unterstützung für WebSockets (erforderlich für Echtzeitfunktionen) bei Vercel befindet sich derzeit in der Beta-Phase und hat Einschränkungen. Für den Produktivbetrieb sollten Sie in Betracht ziehen:
 
-1. Using a different platform that fully supports WebSockets (like Render, Railway, or Heroku)
-2. If you must use Vercel, you'll need to:
-   - Enable WebSocket support in your Vercel project settings (beta feature)
-   - Use the `@vercel/node` runtime for SocketIO (this example uses Python)
-   - Consider adapting the app to use Vercel's WebSocket beta with a Node.js server
+1. Eine andere Plattform zu verwenden, die vollständige WebSocket-Unterstützung bietet (wie Render, Railway oder Heroku)
+2. Wenn Sie Vercel unbedingt verwenden müssen, müssen Sie Folgendes tun:
+   - WebSocket-Unterstützung in den Einstellungen Ihres Vercel-Projekts aktivieren (Beta-Funktion)
+   - Den `@vercel/node` Runtime für SocketIO verwenden (dieses Beispiel verwendet Python)
+   - Erwägen Sie, die App anzupassen, um die WebSocket-Beta von Vercel mit einem Node.js-Server zu verwenden
 
-For a quick test on Vercel with limited functionality, you could modify the app to use polling instead of WebSockets, but this is not recommended for real-time games.
+Für einen schnellen Test auf Vercel mit begrenzter Funktionalität könnten Sie die App so ändern, dass sie statt WebSockets Polling verwendet, aber dies wird für Echtzeit-Spiele nicht empfohlen.
 
-## How It Works
+## Funktionsweise
 
-1. Players join the game and are automatically paired
-2. First player gets 'X', second gets 'O'
-3. Players take turns clicking on the board
-4. Game detects wins, losses, and draws
-5. If a player disconnects, the game ends for the opponent
+1. Spieler treten dem Spiel bei und werden automatisch zusammengepaart
+2. Erster Spieler erhält 'X', zweiter erhält 'O'
+3. Spieler wechseln sich beim Klicken auf das Spielfeld ab
+4. Das Spiel erkennt Siege, Niederlagen und Unentschieden
+5. Wenn ein Spieler die Verbindung trennt, endet das Spiel für den Gegner
 
-## Files
+## Dateien
 
-- `app.py`: Main Flask/SocketIO application
-- `templates/index.html`: Game interface
-- `requirements.txt`: Python dependencies
+- `app.py`: Haupt-Flask/SocketIO-Anwendung
+- `templates/index.html`: Spieloberfläche
+- `requirements.txt`: Python-Abhängigkeiten
 
-## License
+## Lizenz
 
 MIT
