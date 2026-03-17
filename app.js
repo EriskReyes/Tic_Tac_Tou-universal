@@ -1,7 +1,5 @@
 // Cambia esta URL por la de Railway después de hacer deploy
-const BACKEND_URL = 'https://TU_APP.up.railway.app';
-const socket = io(BACKEND_URL);
-
+const socket = io();
 // ─── State ───────────────────────────────────────────────────────────────────
 let myId       = null;
 let mySymbol   = null;

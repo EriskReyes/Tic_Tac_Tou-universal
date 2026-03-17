@@ -6,7 +6,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-app.use(express.static(__dirname));
+const path = require("path");
+
+// 🔥 servir archivos estáticos correctamente
+app.use(express.static(path.join(__dirname)));
+
+// 🔥 asegurar que siempre cargue index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const WIN_TO_CHAMPION = 5;
