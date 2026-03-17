@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +13,10 @@
   <div class="join-card">
     <div class="join-icon">⚔️</div>
     <h1 class="join-title">Tic Tac Toe</h1>
-    <p class="join-sub">Torneo Online · Gratis · Salas Privadas</p>
-    <input type="text" id="nameInput" placeholder="Tu nombre de jugador" maxlength="20" autocomplete="off">
-    <button class="btn-primary" onclick="joinServer()">Entrar al torneo</button>
-    <div id="onlineBadge" class="online-badge">Conectando...</div>
+    <p class="join-sub">Online-Turnier · Kostenlos · Private Räume</p>
+    <input type="text" id="nameInput" placeholder="Dein Spielername" maxlength="20" autocomplete="off">
+    <button class="btn-primary" onclick="joinServer()">Zum Turnier beitreten</button>
+    <div id="onlineBadge" class="online-badge">Verbinde...</div>
   </div>
 </div>
 
@@ -38,19 +38,19 @@
 
         <div class="home-card tournament-card">
           <div class="hc-icon">⚔️</div>
-          <h3>Torneo Global</h3>
-          <p>Juega contra todos. El ganador sigue jugando, el perdedor queda eliminado. El primero en conseguir <strong>5 victorias</strong> se corona campeón mundial 🏆</p>
-          <button class="btn-primary full-w" onclick="joinTournament()">Unirme al torneo</button>
+          <h3>Globales Turnier</h3>
+          <p>Spiele gegen alle. Der Gewinner spielt weiter, der Verlierer scheidet aus. Wer zuerst <strong>5 Siege</strong> erreicht, wird Weltmeister 🏆</p>
+          <button class="btn-primary full-w" onclick="joinTournament()">Am Turnier teilnehmen</button>
         </div>
 
         <div class="home-card room-card">
           <div class="hc-icon">🚪</div>
-          <h3>Sala Privada</h3>
-          <p>Juega 1 vs 1 con un amigo usando un código de sala.</p>
-          <button class="btn-secondary full-w" onclick="createRoom()">Crear sala</button>
+          <h3>Privater Raum</h3>
+          <p>Spiele 1 vs 1 mit einem Freund über einen Raumcode.</p>
+          <button class="btn-secondary full-w" onclick="createRoom()">Raum erstellen</button>
           <div class="room-input-row">
-            <input type="text" id="roomCodeInput" placeholder="Código (ej: ABC123)" maxlength="6" autocomplete="off">
-            <button class="btn-accent" onclick="joinRoomByCode()">Entrar</button>
+            <input type="text" id="roomCodeInput" placeholder="Code (z.B. ABC123)" maxlength="6" autocomplete="off">
+            <button class="btn-accent" onclick="joinRoomByCode()">Beitreten</button>
           </div>
           <p id="roomError" class="room-error hidden"></p>
         </div>
@@ -66,9 +66,9 @@
           <div class="ring ring2"></div>
           <div class="ring-center">⚔️</div>
         </div>
-        <p id="lobbyText" class="lobby-text">Buscando oponente...</p>
+        <p id="lobbyText" class="lobby-text">Suche Gegner...</p>
         <div id="lobbyCode" class="lobby-code hidden"></div>
-        <button class="btn-ghost" onclick="cancelLobby()">Cancelar</button>
+        <button class="btn-ghost" onclick="cancelLobby()">Abbrechen</button>
       </div>
     </div>
 
@@ -79,7 +79,7 @@
           <div class="avatar x">X</div>
           <div class="pinfo">
             <span class="pname" id="xName">-</span>
-            <span class="ptag" id="xWinsTag">0 victorias</span>
+            <span class="ptag" id="xWinsTag">0 Siege</span>
           </div>
         </div>
         <div class="score-center">
@@ -90,7 +90,7 @@
         <div class="player-slot o-side">
           <div class="pinfo right">
             <span class="pname" id="oName">-</span>
-            <span class="ptag" id="oWinsTag">0 victorias</span>
+            <span class="ptag" id="oWinsTag">0 Siege</span>
           </div>
           <div class="avatar o">O</div>
         </div>
@@ -100,8 +100,8 @@
       <div class="board" id="board"></div>
 
       <div id="rematchBar" class="rematch-bar hidden">
-        <button class="btn-ghost" onclick="goHome()">Salir</button>
-        <button class="btn-primary" onclick="requestRematch()">Revancha ↺</button>
+        <button class="btn-ghost" onclick="goHome()">Verlassen</button>
+        <button class="btn-primary" onclick="requestRematch()">Revanche ↺</button>
       </div>
     </div>
 
@@ -109,10 +109,10 @@
     <div id="eliminatedView" class="view hidden">
       <div class="eliminated-box">
         <div class="elim-icon">💀</div>
-        <h2>Eliminado</h2>
-        <p id="elimMsg">Sigue en el chat como espectador</p>
-        <button class="btn-primary full-w" onclick="rejoinQueue()">↩ Volver al torneo</button>
-        <button class="btn-ghost full-w" onclick="goHome()">Inicio</button>
+        <h2>Ausgeschieden</h2>
+        <p id="elimMsg">Du kannst weiter im Chat zuschauen</p>
+        <button class="btn-primary full-w" onclick="rejoinQueue()">↩ Zurück zum Turnier</button>
+        <button class="btn-ghost full-w" onclick="goHome()">Startseite</button>
       </div>
     </div>
 
@@ -123,13 +123,13 @@
     <div class="chat-header">
       <div class="chat-avatar-wrap">🎮</div>
       <div class="chat-meta">
-        <span class="chat-title">Chat del Torneo</span>
-        <span class="chat-sub" id="chatOnline">0 jugadores en línea</span>
+        <span class="chat-title">Turnier-Chat</span>
+        <span class="chat-sub" id="chatOnline">0 Spieler online</span>
       </div>
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-footer">
-      <input type="text" id="chatInput" placeholder="Escribe un mensaje..." maxlength="200" autocomplete="off">
+      <input type="text" id="chatInput" placeholder="Nachricht schreiben..." maxlength="200" autocomplete="off">
       <button class="chat-send-btn" onclick="sendChat()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M22 2L11 13" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
@@ -146,7 +146,7 @@
   <div class="trophy-box">
     <div class="trophy-glow"></div>
     <div class="trophy-emoji">🏆</div>
-    <p class="trophy-label">CAMPEÓN MUNDIAL</p>
+    <p class="trophy-label">WELTMEISTER</p>
     <h1 class="trophy-name" id="trophyName">-</h1>
     <p class="trophy-wins" id="trophyWins">-</p>
     <div class="confetti-wrap" id="confetti"></div>

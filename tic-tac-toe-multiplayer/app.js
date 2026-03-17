@@ -15,10 +15,10 @@ let currentPlayers = { X: { name: '-', wins: 0 }, O: { name: '-', wins: 0 } };
 socket.on('connect', () => { myId = socket.id; });
 
 socket.on('stats', ({ online, inQueue, activeGames }) => {
-  q('#onlineBadge').textContent = `${online} jugadores en línea`;
-  q('#chatOnline').textContent  = `${online} en línea`;
+  q('#onlineBadge').textContent = `${online} Spieler online`;
+  q('#chatOnline').textContent  = `${online} online`;
   q('#statsRow').innerHTML =
-    `<span>👥 ${online} en línea</span><span>⚔️ ${activeGames} partidas</span><span>⏳ ${inQueue} en cola</span>`;
+    `<span>👥 ${online} online</span><span>⚔️ ${activeGames} Spiele</span><span>⏳ ${inQueue} in Warteschlange</span>`;
 });
 
 socket.on('joined', () => {
@@ -29,16 +29,16 @@ socket.on('joined', () => {
 
 socket.on('queue_joined', ({ position }) => {
   showView('lobby');
-  q('#lobbyText').textContent = `Buscando oponente... (posición ${position} en cola)`;
+  q('#lobbyText').textContent = `Suche Gegner... (Position ${position} in der Warteschlange)`;
   q('#lobbyCode').classList.add('hidden');
 });
 
 socket.on('room_created', ({ code }) => {
   myRoomCode = code;
   showView('lobby');
-  q('#lobbyText').textContent = 'Sala creada. Esperando a tu amigo...';
+  q('#lobbyText').textContent = 'Raum erstellt. Warte auf deinen Freund...';
   const el = q('#lobbyCode');
-  el.textContent = `Código de sala: ${code}`;
+  el.textContent = `Raumcode: ${code}`;
   el.classList.remove('hidden');
 });
 
@@ -55,8 +55,8 @@ socket.on('game_start', ({ gameId, mySymbol: sym, players, board, turn, scores, 
 
   q('#xName').textContent    = players.X.name;
   q('#oName').textContent    = players.O.name;
-  q('#xWinsTag').textContent = `${players.X.wins} victorias`;
-  q('#oWinsTag').textContent = `${players.O.wins} victorias`;
+  q('#xWinsTag').textContent = `${players.X.wins} Siege`;
+  q('#oWinsTag').textContent = `${players.O.wins} Siege`;
   updateScores(scores);
   renderBoard(board, [], false);
   updateTurnStatus(turn);
@@ -74,12 +74,12 @@ socket.on('game_over', ({ board, winner, winnerName, winning_cells, is_draw, sco
   currentPlayers = updatedPlayers;
   updateScores(scores);
   renderBoard(board, winning_cells, true);
-  q('#xWinsTag').textContent = `${updatedPlayers.X.wins} victorias`;
-  q('#oWinsTag').textContent = `${updatedPlayers.O.wins} victorias`;
+  q('#xWinsTag').textContent = `${updatedPlayers.X.wins} Siege`;
+  q('#oWinsTag').textContent = `${updatedPlayers.O.wins} Siege`;
 
-  if (is_draw)   setStatus('¡Empate! 🤝', 'draw');
-  else if (iWon) setStatus('¡Ganaste! 🎉', 'win');
-  else           setStatus(`${winnerName} ganó`, 'lose');
+  if (is_draw)   setStatus('Unentschieden! 🤝', 'draw');
+  else if (iWon) setStatus('Du hast gewonnen! 🎉', 'win');
+  else           setStatus(`${winnerName} hat gewonnen`, 'lose');
 
   if (mode === 'room') q('#rematchBar').classList.remove('hidden');
 });
@@ -88,32 +88,32 @@ socket.on('back_to_queue', ({ wins }) => {
   gameOver = false; myGameId = null;
   showView('lobby');
   q('#lobbyText').textContent = wins > 0
-    ? `${wins} victorias — buscando siguiente rival...`
-    : 'Buscando oponente...';
+    ? `${wins} Siege — suche nächsten Gegner...`
+    : 'Suche Gegner...';
   q('#lobbyCode').classList.add('hidden');
 });
 
 socket.on('room_waiting', ({ roomCode }) => {
   gameOver = false; myGameId = null;
   showView('lobby');
-  q('#lobbyText').textContent = 'Esperando revancha...';
+  q('#lobbyText').textContent = 'Warte auf Revanche...';
   const el = q('#lobbyCode');
-  el.textContent = `Código: ${roomCode}`;
+  el.textContent = `Raumcode: ${roomCode}`;
   el.classList.remove('hidden');
   q('#rematchBar').classList.remove('hidden');
 });
 
 socket.on('eliminated', ({ losses }) => {
   gameOver = false; myGameId = null;
-  q('#elimMsg').textContent = `${losses} derrota${losses !== 1 ? 's' : ''} · Puedes volver al torneo`;
+  q('#elimMsg').textContent = `${losses} Niederlage${losses !== 1 ? 'n' : ''} · Du kannst zurück ins Turnier`;
   showView('eliminated');
 });
 
-socket.on('opponent_left',    () => setStatus('Tu oponente abandonó', 'win'));
+socket.on('opponent_left',    () => setStatus('Dein Gegner hat das Spiel verlassen', 'win'));
 socket.on('partner_left',     () => { myRoomCode = null; showView('home'); });
 socket.on('champion',         ({ name, wins }) => showTrophy(name, wins));
 socket.on('tournament_reset', () => {
-  addChat({ type: 'system', text: '🔄 Nuevo torneo · Victorias reseteadas', time: Date.now() });
+  addChat({ type: 'system', text: '🔄 Neues Turnier · Siege zurückgesetzt', time: Date.now() });
 });
 socket.on('chat_history', (msgs) => msgs.forEach(addChat));
 socket.on('chat',          (msg)  => addChat(msg));
@@ -141,10 +141,10 @@ function updateScores(s) {
 
 function updateTurnStatus(turn) {
   if (turn === mySymbol) {
-    setStatus('Tu turno ✨', 'your-turn');
+    setStatus('Du bist dran ✨', 'your-turn');
   } else {
     const name = turn === 'X' ? currentPlayers.X.name : currentPlayers.O.name;
-    setStatus(`Turno de ${name}`, 'opponent-turn');
+    setStatus(`${name} ist dran`, 'opponent-turn');
   }
 }
 
@@ -177,7 +177,7 @@ function requestRematch() {
 function rejoinQueue() {
   socket.emit('rejoin_queue');
   showView('lobby');
-  q('#lobbyText').textContent = 'Volviendo al torneo...';
+  q('#lobbyText').textContent = 'Kehre zum Turnier zurück...';
   q('#lobbyCode').classList.add('hidden');
 }
 
@@ -256,7 +256,7 @@ function fmt(ts) {
 // ─── Trophy ──────────────────────────────────────────────────────────────────
 function showTrophy(name, wins) {
   q('#trophyName').textContent = name;
-  q('#trophyWins').textContent = `${wins} victorias en el torneo`;
+  q('#trophyWins').textContent = `${wins} Siege im Turnier`;
   q('#trophyOverlay').classList.remove('hidden');
   spawnConfetti();
   setTimeout(() => q('#trophyOverlay').classList.add('hidden'), 14000);

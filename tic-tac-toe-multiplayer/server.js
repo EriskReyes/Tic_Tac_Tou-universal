@@ -92,7 +92,7 @@ function startGame(id1, id2, roomCode) {
   });
   io.to(id1).emit('game_start', payload('X'));
   io.to(id2).emit('game_start', payload('O'));
-  sysChat(`⚔️ ${players[id1].name} vs ${players[id2].name}`);
+  sysChat(`⚔️ ${players[id1].name} gegen ${players[id2].name}`);
   broadcastStats();
 }
 
@@ -135,7 +135,7 @@ function handleGameOver(gameId, winnerId, winnerSym, winCells, isDraw) {
   if (!isDraw && winnerId) {
     const wname = players[winnerId]?.name || '?';
     const lname = players[loserId]?.name  || '?';
-    sysChat(`🏅 ${wname} venció a ${lname}! (${players[winnerId]?.wins} victorias)`);
+    sysChat(`🏅 ${wname} besiegte ${lname}! (${players[winnerId]?.wins} Siege)`);
     // Champion check
     if (game.mode === 'tournament' && !champCooldown && players[winnerId]?.wins >= WIN_TO_CHAMPION) {
       champCooldown = true;
@@ -143,11 +143,11 @@ function handleGameOver(gameId, winnerId, winnerSym, winCells, isDraw) {
       const cWins = players[winnerId].wins;
       setTimeout(() => {
         io.emit('champion', { name: cName, wins: cWins });
-        sysChat(`🏆🏆🏆 ¡${cName} ES EL CAMPEÓN MUNDIAL con ${cWins} victorias! 🏆🏆🏆`);
+        sysChat(`🏆🏆🏆 ${cName} IST DER WELTMEISTER mit ${cWins} Siegen! 🏆🏆🏆`);
         setTimeout(() => {
           Object.values(players).forEach(p => { p.wins = 0; p.losses = 0; });
           io.emit('tournament_reset');
-          sysChat('🔄 Nuevo torneo iniciado. ¡A competir!');
+          sysChat('🔄 Neues Turnier gestartet. Auf geht\'s!');
           champCooldown = false;
         }, 15000);
       }, 3000);
@@ -155,7 +155,7 @@ function handleGameOver(gameId, winnerId, winnerSym, winCells, isDraw) {
   } else if (isDraw) {
     const xn = players[game.players.X]?.name || '?';
     const on = players[game.players.O]?.name || '?';
-    sysChat(`🤝 Empate entre ${xn} y ${on}`);
+    sysChat(`🤝 Unentschieden zwischen ${xn} und ${on}`);
   }
 
   const delay = 4000;
@@ -208,10 +208,10 @@ io.on('connection', (socket) => {
 
   socket.on('join', ({ name }) => {
     if (players[socket.id]) return;
-    const n = (name || '').trim().slice(0,20) || `Player${Math.floor(Math.random()*9999)}`;
+    const n = (name || '').trim().slice(0,20) || `Spieler${Math.floor(Math.random()*9999)}`;
     players[socket.id] = { name:n, wins:0, losses:0, game:null, symbol:null, roomCode:null };
     socket.emit('joined', { name:n });
-    sysChat(`👋 ${n} entró al torneo`);
+    sysChat(`👋 ${n} ist dem Turnier beigetreten`);
     broadcastStats();
   });
 
@@ -244,9 +244,9 @@ io.on('connection', (socket) => {
     const p = players[socket.id];
     if (!p || p.game) return;
     const room = rooms[code?.toUpperCase()];
-    if (!room)                          { socket.emit('room_error', { msg:'Sala no encontrada ❌' }); return; }
-    if (room.players.length >= 2)       { socket.emit('room_error', { msg:'Sala llena 🚫' }); return; }
-    if (room.players.includes(socket.id)){ socket.emit('room_error', { msg:'Ya estás en esta sala' }); return; }
+    if (!room)                          { socket.emit('room_error', { msg:'Raum nicht gefunden ❌' }); return; }
+    if (room.players.length >= 2)       { socket.emit('room_error', { msg:'Raum ist voll 🚫' }); return; }
+    if (room.players.includes(socket.id)){ socket.emit('room_error', { msg:'Du bist bereits in diesem Raum' }); return; }
     room.players.push(socket.id);
     p.roomCode = code.toUpperCase();
     startGame(room.players[0], room.players[1], code.toUpperCase());
@@ -314,11 +314,11 @@ io.on('connection', (socket) => {
     }
     const qi = queue.indexOf(socket.id);
     if (qi !== -1) queue.splice(qi, 1);
-    sysChat(`👋 ${p.name} salió`);
+    sysChat(`👋 ${p.name} hat das Turnier verlassen`);
     delete players[socket.id];
     broadcastStats();
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🎮 Servidor en puerto ${PORT}`));
+server.listen(PORT, () => console.log(`🎮 Server läuft auf Port ${PORT}`));
