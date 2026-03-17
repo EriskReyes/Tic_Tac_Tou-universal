@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Tic Tac Toe Multiplayer</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    .board { display: inline-grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 5px; margin: 20px auto; }
+    .cell { width: 100px; height: 100px; background: #eee; border-radius: 8px; font-size: 2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .cell.x { color: #e74c3c; }
+    .cell.o { color: #3498db; }
+    .status { margin: 20px 0; font-size: 1.2rem; }
+    .info { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div class="status" id="status">Warte auf Gegner...</div>
+  <div class="board" id="board">
+    <!-- Cells will be filled by JS -->
+  </div>
+  <div class="info">
+    Dein Symbol: <span id="yourSymbol"></span><br>
+    Raum: <span id="roomId"></span>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let room = null;
+    let yourSymbol = null;
+
+    socket.on('connect', () => {
+      console.log('Verbunden');
+    });
+
+    socket.on('waiting', data => {
+      document.getElementById('status').textContent = 'Warte auf Gegner...';
+      room = data.room;
+      yourSymbol = data.your_symbol;
+      document.getElementById('yourSymbol').textContent = yourSymbol;
+      document.getElementById('roomId').textContent = room;
+    });
+
+    socket.on('game_start', data => {
+      room = data.room;
+      yourSymbol = data.your_symbol;
+      document.getElementById('status').textContent = `Dein Zug: ${yourSymbol === 'X' ? '✕' : '○'}`;
+      document.getElementById('yourSymbol').textContent = yourSymbol;
+      document.getElementById('roomId').textContent = room;
+      renderBoard(data.board);
+    });
+
+    socket.on('move_made', data => {
+      document.getElementById('status').textContent = `Zug des Gegners`;
+      renderBoard(data.board);
+    });
+
+    socket.on('error', data => {
+      alert(data.msg);
+    });
+
+    socket.on('game_over', data => {
+      if (data.winner) {
+        document.getElementById('status').textContent = `${data.winner} hat gewonnen!`;
+      } else {
+        document.getElementById('status').textContent = 'Unentschieden';
+      }
+      renderBoard(data.board);
+      disableBoard();
+    });
+
+    socket.on('opponent_left', () => {
+      document.getElementById('status').textContent = 'Gegner ist gegangen';
+      disableBoard();
+    });
+
+    function renderBoard(board) {
+      const boardEl = document.getElementById('board');
+      boardEl.innerHTML = '';
+      board.forEach((cell, idx) => {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        if (cell === 'X') {
+          div.classList.add('x');
+          div.textContent = '✕';
+        } else if (cell === 'O') {
+          div.classList.add('o');
+          div.textContent = '○';
+        }
+        div.addEventListener('click', () => {
+          if (!cell && yourSymbol) {
+            socket.emit('make_move', { room, cell: idx });
+          }
+        });
+        boardEl.appendChild(div);
+      });
+    }
+
+    function disableBoard() {
+      document.getElementById('board').style.pointerEvents = 'none';
+    }
+  </script>
+</body>
+</html>
