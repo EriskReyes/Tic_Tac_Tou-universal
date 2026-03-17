@@ -192,15 +192,17 @@ function handleGameOver(gameId, winnerId, winnerSym, winCells, isDraw) {
   const pO = game.players.O;
 
   if (game.mode === 'room' && game.roomCode && rooms[game.roomCode]) {
-    // Privater Raum: beide warten auf Revanche
+    // Privater Raum: Spieler wählen ob sie Revanche wollen
     setTimeout(() => {
       [pX, pO].forEach(id => {
         if (!players[id]) return;
         players[id].game   = null;
         players[id].symbol = null;
-        io.to(id).emit('room_waiting', { roomCode: game.roomCode });
       });
-      rooms[game.roomCode].gameId = null;
+      if (rooms[game.roomCode]) {
+        rooms[game.roomCode].gameId      = null;
+        rooms[game.roomCode].rematchVotes = {};
+      }
       delete games[gameId];
       broadcastStats();
     }, DELAY);
@@ -293,14 +295,37 @@ io.on('connection', (socket) => {
     startGame(room.players[0], room.players[1], key);
   });
 
-  // ── Revanche ──
-  socket.on('rematch', ({ roomCode }) => {
+  // ── Revanche-Abstimmung ──
+  socket.on('rematch_vote', ({ roomCode, vote }) => {
     const room = rooms[roomCode];
-    if (!room || room.players.length < 2) return;
+    const p    = players[socket.id];
+    if (!room || !p || p.game) return;
+
+    if (!room.rematchVotes) room.rematchVotes = {};
+
+    if (vote === 'leave') {
+      room.players = room.players.filter(id => id !== socket.id);
+      p.roomCode   = null;
+      delete room.rematchVotes[socket.id];
+      const otherId = room.players[0];
+      if (otherId && players[otherId]) io.to(otherId).emit('partner_left');
+      if (room.players.length === 0) delete rooms[roomCode];
+      return;
+    }
+
+    // vote === 'rematch'
+    room.rematchVotes[socket.id] = true;
     const [id1, id2] = room.players;
-    if (!players[id1] || !players[id2])   return;
-    if (players[id1].game || players[id2].game) return;
-    startGame(id1, id2, roomCode);
+    const v1 = !!room.rematchVotes[id1];
+    const v2 = !!room.rematchVotes[id2];
+
+    if (id1 && players[id1]) io.to(id1).emit('rematch_vote_status', { myVote: v1, opponentVote: v2 });
+    if (id2 && players[id2]) io.to(id2).emit('rematch_vote_status', { myVote: v2, opponentVote: v1 });
+
+    if (v1 && v2 && players[id1] && players[id2]) {
+      room.rematchVotes = {};
+      startGame(id1, id2, roomCode);
+    }
   });
 
   // ── Spielzug ──

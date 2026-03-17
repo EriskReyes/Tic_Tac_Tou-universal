@@ -59,6 +59,7 @@ socket.on('game_start', ({ gameId, mySymbol: sym, players, board, turn, scores, 
   renderBoard(board, [], false);
   updateTurnStatus(turn);
   q('#rematchBar').classList.add('hidden');
+  resetRematchButtons();
   showView('game');
 });
 
@@ -91,14 +92,14 @@ socket.on('back_to_queue', ({ wins }) => {
   q('#lobbyCode').classList.add('hidden');
 });
 
-socket.on('room_waiting', ({ roomCode }) => {
-  gameOver = false; myGameId = null;
-  showView('lobby');
-  q('#lobbyText').textContent = 'Warte auf Revanche...';
-  const el = q('#lobbyCode');
-  el.textContent = `Raumcode: ${roomCode}`;
-  el.classList.remove('hidden');
-  q('#rematchBar').classList.remove('hidden');
+socket.on('rematch_vote_status', ({ myVote, opponentVote }) => {
+  const btn = q('#rematchBtn');
+  if (myVote && !opponentVote) {
+    setStatus('Warte auf die Entscheidung des Gegners... ⏳', 'opponent-turn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Warte... ⏳'; }
+  } else if (!myVote && opponentVote) {
+    setStatus('Dein Gegner will Revanche! Wähle jetzt! 🎮', 'your-turn');
+  }
 });
 
 socket.on('eliminated', ({ losses }) => {
@@ -169,7 +170,11 @@ function cancelLobby() {
 }
 
 function requestRematch() {
-  if (myRoomCode) socket.emit('rematch', { roomCode: myRoomCode });
+  if (!myRoomCode) return;
+  socket.emit('rematch_vote', { roomCode: myRoomCode, vote: 'rematch' });
+  const btn = q('#rematchBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Warte... ⏳'; }
+  q('#leaveBtn').disabled = true;
 }
 
 function rejoinQueue() {
@@ -180,9 +185,20 @@ function rejoinQueue() {
 }
 
 function goHome() {
-  socket.emit('leave_queue');
-  myGameId = null; mySymbol = null; myMode = null; gameOver = false;
+  if (myMode === 'room' && myRoomCode) {
+    socket.emit('rematch_vote', { roomCode: myRoomCode, vote: 'leave' });
+  } else {
+    socket.emit('leave_queue');
+  }
+  myGameId = null; mySymbol = null; myMode = null; myRoomCode = null; gameOver = false;
   showView('home');
+}
+
+function resetRematchButtons() {
+  const btn = q('#rematchBtn');
+  const leave = q('#leaveBtn');
+  if (btn)   { btn.disabled = false; btn.textContent = 'Revanche ↺'; }
+  if (leave) { leave.disabled = false; }
 }
 
 function makeMove(cell) {
