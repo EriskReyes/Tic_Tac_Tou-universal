@@ -1,105 +1,56 @@
-<!doctype html>
-<html lang="de">
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Tic Tac Toe Multiplayer</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    .board { display: inline-grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 5px; margin: 20px auto; }
-    .cell { width: 100px; height: 100px; background: #eee; border-radius: 8px; font-size: 2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .cell.x { color: #e74c3c; }
-    .cell.o { color: #3498db; }
-    .status { margin: 20px 0; font-size: 1.2rem; }
-    .info { margin-top: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe Multiplayer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <h1>Tic Tac Toe</h1>
-  <div class="status" id="status">Warte auf Gegner...</div>
-  <div class="board" id="board">
-    <!-- Cells will be filled by JS -->
-  </div>
-  <div class="info">
-    Dein Symbol: <span id="yourSymbol"></span><br>
-    Raum: <span id="roomId"></span>
-  </div>
+    <div class="container">
+        <div class="header">
+            <h1>Tic Tac Toe Multiplayer</h1>
+            <p>Juega contra otros jugadores en tiempo real</p>
+        </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-  <script>
-    const socket = io();
-    let room = null;
-    let yourSymbol = null;
+        <div id="joinScreen" class="screen active">
+            <div class="card">
+                <h2>Unirse a un juego</h2>
+                <input type="text" id="usernameInput" placeholder="Tu nombre" maxlength="20">
+                <button class="button-primary" onclick="joinGame()">Jugar</button>
+            </div>
+        </div>
 
-    socket.on('connect', () => {
-      console.log('Verbunden');
-    });
+        <div id="waitingScreen" class="screen">
+            <div class="card">
+                <h2>Esperando oponente...</h2>
+                <p>Eres el jugador: <strong id="yourSymbol">X</strong></p>
+                <div class="loader"></div>
+                <p id="roomCode">Sala: <code></code></p>
+            </div>
+        </div>
 
-    socket.on('waiting', data => {
-      document.getElementById('status').textContent = 'Warte auf Gegner...';
-      room = data.room;
-      yourSymbol = data.your_symbol;
-      document.getElementById('yourSymbol').textContent = yourSymbol;
-      document.getElementById('roomId').textContent = room;
-    });
+        <div id="gameScreen" class="screen">
+            <div class="main-grid">
+                <div class="card">
+                    <h2>Tablero</h2>
+                    <div class="game-board" id="board"></div>
+                    <div class="game-status" id="gameStatus"></div>
+                </div>
+                <div class="card">
+                    <h2>Información</h2>
+                    <div class="game-info">
+                        <p>Tu símbolo: <strong id="playerSymbol">X</strong></p>
+                        <p>Turno de: <strong id="currentTurn">-</strong></p>
+                        <div id="opponentInfo"></div>
+                    </div>
+                    <button class="button-primary" onclick="resetGame()" style="margin-top: 1rem; width: 100%;">Nuevo juego</button>
+                    <button onclick="goBack()" style="margin-top: 0.5rem; width: 100%;">Salir</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    socket.on('game_start', data => {
-      room = data.room;
-      yourSymbol = data.your_symbol;
-      document.getElementById('status').textContent = `Dein Zug: ${yourSymbol === 'X' ? '✕' : '○'}`;
-      document.getElementById('yourSymbol').textContent = yourSymbol;
-      document.getElementById('roomId').textContent = room;
-      renderBoard(data.board);
-    });
-
-    socket.on('move_made', data => {
-      document.getElementById('status').textContent = `Zug des Gegners`;
-      renderBoard(data.board);
-    });
-
-    socket.on('error', data => {
-      alert(data.msg);
-    });
-
-    socket.on('game_over', data => {
-      if (data.winner) {
-        document.getElementById('status').textContent = `${data.winner} hat gewonnen!`;
-      } else {
-        document.getElementById('status').textContent = 'Unentschieden';
-      }
-      renderBoard(data.board);
-      disableBoard();
-    });
-
-    socket.on('opponent_left', () => {
-      document.getElementById('status').textContent = 'Gegner ist gegangen';
-      disableBoard();
-    });
-
-    function renderBoard(board) {
-      const boardEl = document.getElementById('board');
-      boardEl.innerHTML = '';
-      board.forEach((cell, idx) => {
-        const div = document.createElement('div');
-        div.className = 'cell';
-        if (cell === 'X') {
-          div.classList.add('x');
-          div.textContent = '✕';
-        } else if (cell === 'O') {
-          div.classList.add('o');
-          div.textContent = '○';
-        }
-        div.addEventListener('click', () => {
-          if (!cell && yourSymbol) {
-            socket.emit('make_move', { room, cell: idx });
-          }
-        });
-        boardEl.appendChild(div);
-      });
-    }
-
-    function disableBoard() {
-      document.getElementById('board').style.pointerEvents = 'none';
-    }
-  </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
