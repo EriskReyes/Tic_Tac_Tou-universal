@@ -2,11 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.11"
-      }
+      "src": "app.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -16,24 +13,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "app.py"
     }
   ]
 }
-```
-
----
-
-## **Estructura final:**
-```
-.
-├── api/
-│   └── index.py
-├── templates/
-│   └── index.html
-├── static/
-│   ├── styles.css
-│   └── app.js
-├── requirements.txt
-├── vercel.json
-└── .gitignore
