@@ -1,66 +1,159 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe Online</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Tic Tac Toe</h1>
-            <p>Lokaler 2-Spieler-Modus</p>
+
+<!-- ═══════════════════════════════════════════════════════ JOIN SCREEN ══ -->
+<div id="joinScreen" class="join-screen">
+  <div class="join-card">
+    <div class="join-icon">⚔️</div>
+    <h1 class="join-title">Tic Tac Toe</h1>
+    <p class="join-sub">Torneo Online · Gratis · Salas Privadas</p>
+    <input type="text" id="nameInput" placeholder="Tu nombre de jugador" maxlength="20" autocomplete="off">
+    <button class="btn-primary" onclick="joinServer()">Entrar al torneo</button>
+    <div id="onlineBadge" class="online-badge">Conectando...</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ APP LAYOUT ══ -->
+<div id="app" class="app-layout hidden">
+
+  <!-- LEFT ─ Game Area -->
+  <div class="left-panel">
+
+    <!-- HOME VIEW -->
+    <div id="homeView" class="view">
+      <div class="home-header">
+        <div>
+          <h2>🏆 Tic Tac Toe Online</h2>
+          <div id="statsRow" class="stats-row"></div>
+        </div>
+      </div>
+      <div class="home-grid">
+
+        <div class="home-card tournament-card">
+          <div class="hc-icon">⚔️</div>
+          <h3>Torneo Global</h3>
+          <p>Juega contra todos. El ganador sigue jugando, el perdedor queda eliminado. El primero en conseguir <strong>5 victorias</strong> se corona campeón mundial 🏆</p>
+          <button class="btn-primary full-w" onclick="joinTournament()">Unirme al torneo</button>
         </div>
 
-        <!-- Startbildschirm -->
-        <div id="joinScreen" class="screen active">
-            <div class="card">
-                <h2>Neues Spiel</h2>
-                <input type="text" id="xNameInput" placeholder="Name Spieler X" maxlength="20" autocomplete="off">
-                <input type="text" id="oNameInput" placeholder="Name Spieler O" maxlength="20" autocomplete="off">
-                <button class="btn-primary" onclick="startGame()">Spiel Starten</button>
-            </div>
+        <div class="home-card room-card">
+          <div class="hc-icon">🚪</div>
+          <h3>Sala Privada</h3>
+          <p>Juega 1 vs 1 con un amigo usando un código de sala.</p>
+          <button class="btn-secondary full-w" onclick="createRoom()">Crear sala</button>
+          <div class="room-input-row">
+            <input type="text" id="roomCodeInput" placeholder="Código (ej: ABC123)" maxlength="6" autocomplete="off">
+            <button class="btn-accent" onclick="joinRoomByCode()">Entrar</button>
+          </div>
+          <p id="roomError" class="room-error hidden"></p>
         </div>
 
-        <!-- Spielbildschirm -->
-        <div id="gameScreen" class="screen">
-            <!-- Punktestand -->
-            <div class="scoreboard">
-                <div class="player-score x-player">
-                    <div class="player-avatar x">X</div>
-                    <div class="player-details">
-                        <span class="player-name-text" id="xName">Spieler X</span>
-                        <span class="player-score-num" id="xScore">0</span>
-                    </div>
-                </div>
-                <div class="score-center">
-                    <span class="vs-text">UNENTSCHIEDEN</span>
-                    <span class="draws-num" id="drawsScore">0</span>
-                </div>
-                <div class="player-score o-player">
-                    <div class="player-details">
-                        <span class="player-name-text" id="oName">Spieler O</span>
-                        <span class="player-score-num" id="oScore">0</span>
-                    </div>
-                    <div class="player-avatar o">O</div>
-                </div>
-            </div>
-
-            <!-- Spielstatus -->
-            <div class="status-banner" id="gameStatus">Bereit</div>
-
-            <!-- Spielbrett -->
-            <div class="game-board" id="board"></div>
-
-            <!-- Aktionen -->
-            <div class="actions">
-                <button class="btn-secondary" onclick="goBack()">Verlassen</button>
-                <button class="btn-primary" onclick="resetGame()">Neues Spiel</button>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- LOBBY VIEW -->
+    <div id="lobbyView" class="view hidden">
+      <div class="lobby-box">
+        <div class="lobby-rings">
+          <div class="ring ring1"></div>
+          <div class="ring ring2"></div>
+          <div class="ring-center">⚔️</div>
+        </div>
+        <p id="lobbyText" class="lobby-text">Buscando oponente...</p>
+        <div id="lobbyCode" class="lobby-code hidden"></div>
+        <button class="btn-ghost" onclick="cancelLobby()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- GAME VIEW -->
+    <div id="gameView" class="view hidden">
+      <div class="scoreboard">
+        <div class="player-slot x-side">
+          <div class="avatar x">X</div>
+          <div class="pinfo">
+            <span class="pname" id="xName">-</span>
+            <span class="ptag" id="xWinsTag">0 victorias</span>
+          </div>
+        </div>
+        <div class="score-center">
+          <span class="score-num x-color" id="scoreX">0</span>
+          <span class="score-sep">:</span>
+          <span class="score-num o-color" id="scoreO">0</span>
+        </div>
+        <div class="player-slot o-side">
+          <div class="pinfo right">
+            <span class="pname" id="oName">-</span>
+            <span class="ptag" id="oWinsTag">0 victorias</span>
+          </div>
+          <div class="avatar o">O</div>
+        </div>
+      </div>
+
+      <div class="status-banner" id="gameStatus">-</div>
+      <div class="board" id="board"></div>
+
+      <div id="rematchBar" class="rematch-bar hidden">
+        <button class="btn-ghost" onclick="goHome()">Salir</button>
+        <button class="btn-primary" onclick="requestRematch()">Revancha ↺</button>
+      </div>
+    </div>
+
+    <!-- ELIMINATED VIEW -->
+    <div id="eliminatedView" class="view hidden">
+      <div class="eliminated-box">
+        <div class="elim-icon">💀</div>
+        <h2>Eliminado</h2>
+        <p id="elimMsg">Sigue en el chat como espectador</p>
+        <button class="btn-primary full-w" onclick="rejoinQueue()">↩ Volver al torneo</button>
+        <button class="btn-ghost full-w" onclick="goHome()">Inicio</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT ─ Chat Panel -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-avatar-wrap">🎮</div>
+      <div class="chat-meta">
+        <span class="chat-title">Chat del Torneo</span>
+        <span class="chat-sub" id="chatOnline">0 jugadores en línea</span>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-footer">
+      <input type="text" id="chatInput" placeholder="Escribe un mensaje..." maxlength="200" autocomplete="off">
+      <button class="chat-send-btn" onclick="sendChat()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M22 2L11 13" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════ CHAMPION OVERLAY ══ -->
+<div id="trophyOverlay" class="trophy-overlay hidden">
+  <div class="trophy-box">
+    <div class="trophy-glow"></div>
+    <div class="trophy-emoji">🏆</div>
+    <p class="trophy-label">CAMPEÓN MUNDIAL</p>
+    <h1 class="trophy-name" id="trophyName">-</h1>
+    <p class="trophy-wins" id="trophyWins">-</p>
+    <div class="confetti-wrap" id="confetti"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
