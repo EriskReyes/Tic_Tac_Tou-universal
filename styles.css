@@ -721,6 +721,48 @@ input[type="text"]::placeholder { color: var(--muted); }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
 /* ════════════════════════════════════════════════════════ RESPONSIVE ══ */
+@media (min-width: 701px) {
+  .left-panel {
+    align-items: center;
+    justify-content: center;
+  }
+  .view {
+    max-width: 380px;
+    width: 100%;
+  }
+  .cell {
+    font-size: 1.4rem;
+    border-radius: 10px;
+  }
+  .scoreboard {
+    padding: .6rem .9rem;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+  .score-num {
+    font-size: 1.5rem;
+  }
+  .status-banner {
+    font-size: .85rem;
+    padding: .55rem .9rem;
+    min-height: 40px;
+  }
+  .btn-primary, .btn-secondary, .btn-accent, .btn-ghost {
+    padding: .55rem .9rem;
+    font-size: .82rem;
+  }
+  .home-card {
+    padding: 1rem;
+  }
+  .home-card p {
+    font-size: .75rem;
+  }
+}
+
 @media (max-width: 700px) {
   .app-layout {
     flex-direction: column;
