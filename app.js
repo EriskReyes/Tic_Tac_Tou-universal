@@ -29,6 +29,8 @@ socket.on('queue_joined', ({ position }) => {
   showView('lobby');
   q('#lobbyText').textContent = `Suche Gegner... (Position ${position} in der Warteschlange)`;
   q('#lobbyCode').classList.add('hidden');
+  q('#bracketPanel').classList.add('hidden');
+  q('#bracketAdvancing').classList.add('hidden');
 });
 
 socket.on('room_created', ({ code }) => {
@@ -76,11 +78,23 @@ socket.on('game_over', ({ board, winner, winnerName, winning_cells, is_draw, sco
   q('#xWinsTag').textContent = `${updatedPlayers.X.wins} Siege`;
   q('#oWinsTag').textContent = `${updatedPlayers.O.wins} Siege`;
 
-  if (is_draw)   setStatus('Unentschieden! 🤝', 'draw');
-  else if (iWon) setStatus('Du hast gewonnen! 🎉', 'win');
-  else           setStatus(`${winnerName} hat gewonnen`, 'lose');
+  if (is_draw) {
+    setStatus('Unentschieden! 🤝', 'draw');
+    triggerGameAnimation('draw');
+  } else if (iWon) {
+    setStatus('Du hast gewonnen! 🎉', 'win');
+    triggerGameAnimation('win');
+  } else {
+    setStatus(`${winnerName} hat gewonnen`, 'lose');
+    triggerGameAnimation('lose');
+  }
 
-  if (mode === 'room') q('#rematchBar').classList.remove('hidden');
+  if (mode === 'room') {
+    resetRematchButtons();
+    q('#rematchBar').classList.remove('hidden');
+    q('#rematchBtn').textContent = 'Revanche ↺';
+  }
+  // Tournament: tournament_waiting or eliminated event handles next step
 });
 
 socket.on('back_to_queue', ({ wins }) => {
@@ -116,6 +130,75 @@ socket.on('tournament_reset', () => {
 });
 socket.on('chat_history', (msgs) => msgs.forEach(addChat));
 socket.on('chat',          (msg)  => addChat(msg));
+
+socket.on('tournament_countdown', ({ seconds, count }) => {
+  if (seconds > 0) {
+    q('#lobbyText').textContent = `Turnier startet in ${seconds}s — ${count} Spieler bereit`;
+  } else {
+    q('#lobbyText').textContent = 'Turnier startet jetzt! 🚀';
+  }
+  q('#bracketPanel').classList.add('hidden');
+  q('#cancelLobbyBtn').classList.remove('hidden');
+});
+
+socket.on('tournament_round_start', ({ round, totalRounds, matchups }) => {
+  addChat({ type: 'system', text: `⚔️ Runde ${round}/${totalRounds} gestartet — ${matchups.length} Spiele laufen!`, time: Date.now() });
+});
+
+socket.on('tournament_waiting', ({ round, remaining, totalRounds }) => {
+  showView('lobby');
+  q('#lobbyCode').classList.add('hidden');
+  q('#cancelLobbyBtn').classList.add('hidden');
+  if (remaining > 0) {
+    q('#lobbyText').textContent = `Du hast gewonnen! 🏆 Warte auf ${remaining} laufende Spiel${remaining !== 1 ? 'e' : ''}...`;
+  } else {
+    q('#lobbyText').textContent = `Runde ${round}/${totalRounds} gewonnen! Warte auf nächste Runde... ⏳`;
+  }
+});
+
+socket.on('tournament_bye', ({ round }) => {
+  showView('lobby');
+  q('#lobbyText').textContent = `Runde ${round}: Freilos 🎯 Du kommst automatisch weiter!`;
+  q('#lobbyCode').classList.add('hidden');
+  q('#cancelLobbyBtn').classList.add('hidden');
+});
+
+socket.on('tournament_between_rounds', ({ advancing, nextIn }) => {
+  q('#lobbyText').textContent = `Alle Spiele fertig! Nächste Runde in ${nextIn}s...`;
+  const adv = q('#bracketAdvancing');
+  adv.textContent = '✅ Weiter: ' + advancing.join(', ');
+  adv.classList.remove('hidden');
+});
+
+socket.on('tournament_state', ({ phase, round, totalRounds, activeMatches, advancing }) => {
+  const panel = q('#bracketPanel');
+  if (phase !== 'playing' || activeMatches.length === 0) {
+    panel.classList.add('hidden');
+    return;
+  }
+  panel.classList.remove('hidden');
+  q('#bracketTitle').textContent = `🔴 Live — Runde ${round}/${totalRounds || '?'}`;
+  q('#bracketMatches').innerHTML = activeMatches.map(m => `
+    <div class="bracket-match live">
+      <span class="bm-name">${esc(m.p1)}</span>
+      <span class="bm-vs">vs</span>
+      <span class="bm-name">${esc(m.p2)}</span>
+      <span class="bm-score">${m.scores.X}:${m.scores.O}</span>
+      <span class="bm-live">●</span>
+    </div>`).join('');
+  if (advancing.length > 0) {
+    const adv = q('#bracketAdvancing');
+    adv.textContent = '✅ Weiter: ' + advancing.map(n => esc(n)).join(', ');
+    adv.classList.remove('hidden');
+  }
+});
+
+socket.on('tournament_in_progress', ({ round, total }) => {
+  showView('lobby');
+  q('#lobbyText').textContent = `Turnier läuft (Runde ${round}, ${total} Spieler). Du bist in der Warteschlange für das nächste Turnier.`;
+  q('#lobbyCode').classList.add('hidden');
+  q('#bracketPanel').classList.add('hidden');
+});
 
 // ─── UI Helpers ──────────────────────────────────────────────────────────────
 const q = (sel) => document.querySelector(sel);
@@ -170,7 +253,7 @@ function cancelLobby() {
 }
 
 function requestRematch() {
-  if (!myRoomCode) return;
+  if (myMode !== 'room' || !myRoomCode) return;
   socket.emit('rematch_vote', { roomCode: myRoomCode, vote: 'rematch' });
   const btn = q('#rematchBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Warte... ⏳'; }
@@ -180,8 +263,10 @@ function requestRematch() {
 function rejoinQueue() {
   socket.emit('rejoin_queue');
   showView('lobby');
-  q('#lobbyText').textContent = 'Kehre zum Turnier zurück...';
+  q('#lobbyText').textContent = 'Warte auf nächstes Turnier...';
   q('#lobbyCode').classList.add('hidden');
+  q('#bracketPanel').classList.add('hidden');
+  q('#cancelLobbyBtn').classList.remove('hidden');
 }
 
 function goHome() {
@@ -248,15 +333,113 @@ function addChat(msg) {
     wrap.className = 'chat-row ' + (isMe ? 'chat-me' : 'chat-other');
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble';
-    bubble.innerHTML = `
-      ${!isMe ? `<span class="chat-sender">${esc(msg.name)}</span>` : ''}
-      <p class="chat-text">${esc(msg.text)}</p>
-      <span class="chat-time">${fmt(msg.time)}</span>`;
+
+    if (!isMe) {
+      const sender = document.createElement('span');
+      sender.className = 'chat-sender';
+      sender.textContent = msg.name;
+      bubble.appendChild(sender);
+    }
+
+    if (msg.type === 'image') {
+      const img = document.createElement('img');
+      img.src = msg.data;
+      img.className = 'chat-image';
+      img.onclick = () => showLightbox(msg.data);
+      bubble.appendChild(img);
+    } else {
+      const p = document.createElement('p');
+      p.className = 'chat-text';
+      p.textContent = msg.text;
+      bubble.appendChild(p);
+    }
+
+    const time = document.createElement('span');
+    time.className = 'chat-time';
+    time.textContent = fmt(msg.time);
+    bubble.appendChild(time);
+
     wrap.appendChild(bubble);
   }
 
   container.appendChild(wrap);
   container.scrollTop = container.scrollHeight;
+}
+
+// ─── Image ───────────────────────────────────────────────────────────────────
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  if (file.size > 10 * 1024 * 1024) { input.value = ''; return; }
+
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d');
+  const img    = new Image();
+  const url    = URL.createObjectURL(file);
+
+  img.onload = () => {
+    const MAX = 320;
+    let w = img.width, h = img.height;
+    if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+    else        { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+    canvas.width = w; canvas.height = h;
+    ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    const data = canvas.toDataURL('image/jpeg', 0.78);
+    if (data.length > 180000) return;
+    socket.emit('chat_image', { data });
+    input.value = '';
+  };
+  img.onerror = () => URL.revokeObjectURL(url);
+  img.src = url;
+}
+
+function showLightbox(src) {
+  const lb  = document.createElement('div');
+  lb.className = 'img-lightbox';
+  const img = document.createElement('img');
+  img.src = src;
+  lb.appendChild(img);
+  lb.onclick = () => lb.remove();
+  document.body.appendChild(lb);
+}
+
+// ─── Animaciones ─────────────────────────────────────────────────────────────
+function triggerGameAnimation(type) {
+  const flash = document.createElement('div');
+  flash.className = `anim-flash ${type}`;
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 1200);
+
+  if (type === 'win') {
+    spawnParticles(['🎉','🎊','✨','⭐','🌟','💫','🔥','🏆','🎯','💥','🥳','🎈'], 24);
+  } else if (type === 'lose') {
+    const el = q('#gameView');
+    el.classList.add('game-shake');
+    setTimeout(() => el.classList.remove('game-shake'), 700);
+    spawnParticles(['😭','💔','😢','😞','💀','😤','🫠','😵'], 14);
+  } else {
+    spawnParticles(['🤝','😅','🙃','💜','✨','🌀','🎭','😶'], 14);
+  }
+}
+
+function spawnParticles(emojis, count) {
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'game-particle';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      const x     = 15 + Math.random() * 70;
+      const y     = 20 + Math.random() * 55;
+      const dx    = ((Math.random() - 0.5) * 55).toFixed(1) + 'vw';
+      const dy    = (-(18 + Math.random() * 48)).toFixed(1) + 'vh';
+      const dur   = (0.85 + Math.random() * 0.75).toFixed(2) + 's';
+      const delay = (i * 0.042).toFixed(2) + 's';
+      el.style.cssText = `left:${x}vw;top:${y}vh;--dx:${dx};--dy:${dy};--dur:${dur};--delay:${delay};font-size:${1.1 + Math.random() * 1.3}rem;`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), (parseFloat(dur) + parseFloat(delay) + 0.3) * 1000);
+    }, i * 42);
+  }
 }
 
 function esc(s) {

@@ -68,7 +68,12 @@
         </div>
         <p id="lobbyText" class="lobby-text">Suche Gegner...</p>
         <div id="lobbyCode" class="lobby-code hidden"></div>
-        <button class="btn-ghost" onclick="cancelLobby()">Abbrechen</button>
+        <button class="btn-ghost" id="cancelLobbyBtn" onclick="cancelLobby()">Abbrechen</button>
+      </div>
+      <div id="bracketPanel" class="bracket-panel hidden">
+        <div id="bracketTitle" class="bracket-title">Laufende Spiele</div>
+        <div id="bracketMatches"></div>
+        <div id="bracketAdvancing" class="bracket-advancing hidden"></div>
       </div>
     </div>
 
@@ -129,6 +134,8 @@
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-footer">
+      <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(this)">
+      <button class="chat-img-btn" onclick="q('#imageInput').click()" title="Bild senden">📎</button>
       <input type="text" id="chatInput" placeholder="Nachricht schreiben..." maxlength="200" autocomplete="off">
       <button class="chat-send-btn" onclick="sendChat()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
